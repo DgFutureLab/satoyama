@@ -6,11 +6,14 @@ import uuid
 from collections import Iterable
 import json
 import config
+from datetime import datetime
 
 class ExpectedFieldException(Exception):
 	def __init__(self, field):
 		message = 'Expected keyword for field %s'%field
 		super(ExpectedFieldException, self).__init__(message)
+
+
 
 
 def create(model):						### 'create' is the name of the decorator
@@ -71,7 +74,7 @@ class SensorType(Base):
 		self.unit = unit
 
 	def json_detailed(self):
-		return {'type': '<SensorType>', 'name': self.name, 'unit': self.unit, 'sensors':map(lambda s: s.json_summary(), self.sensors), 'id': self.id}
+		return {'type': '<SensorType>', 'name': self.name, 'unit': self.unit, 'sensors':len(self.sensors), 'id': self.id}
 
 	def json_summary(self):
 		return {'type': '<SensorType>', 'name': self.name, 'id': self.id}
@@ -107,10 +110,10 @@ class Sensor(Base):
 			self.readings.append(reading)
 
 	def json_detailed(self):
-		return {'type': '<Sensor>', 'uuid': self.uuid, 'sensor_type':self.sensortype, 'readings': map(lambda r: r.json_detailed(), self.readings)}
+		return {'type': '<Sensor>', 'uuid': self.uuid, 'sensor_type':self.sensortype.json_summary(), 'readings': map(lambda r: r.json_detailed(), self.readings)}
 
 	def json_summary(self):
-		return {'type': '<Sensor>', 'uuid': self.uuid, 'sensor_type':self.sensortype, 'number of readings': len(self.readings)}
+		return {'type': '<Sensor>', 'uuid': self.uuid, 'number of readings': len(self.readings)}
 
  
 	def __repr__(self):
@@ -126,14 +129,20 @@ class Reading(Base):
 
 	sensor_id = Column( Integer, ForeignKey('sensors.id') )
 
+
 	def __init__(self, sensor, value = None, timestamp = None):
 		assert isinstance(sensor, Sensor), 'sensor must be an instance of type Sensor'
 		self.sensor = sensor
 		self.value = value
-		self.timestamp = timestamp
+		if timestamp:
+			try:
+				self.timestamp = datetime.strptime(timestamp, config.DATETIME_FORMAT)
+			except ValueError, e:
+				timestamp = None
+				raise e
 
 	def json_detailed(self):
-		return {'type': '<Reading>', 'value': self.value, 'timestamp': self.timestamp.strftime(config.DATETIME_FORMAT)}
+		return {'type': '<Reading>', 'value': self.value, 'timestamp': self.timestamp, 'sensor': self.sensor}
 
 	def json_summary(self):
 		return {'type': '<Reading>', 'value': self.value, 'id': self.id}
@@ -142,10 +151,13 @@ class Reading(Base):
 		return json.dumps(self.json_summary())
 
 		
+def get_testobjects():
 
-
-
-
+	n = Node.create(alias = 'testnode')
+	st = SensorType.create(name = 'temperature', unit = 'C')
+ 	s = Sensor.create(sensortype = st, node = n)
+ 	r = Reading.create(sensor = s)
+ 	return n, st, s, r
 
 
 
