@@ -1,6 +1,6 @@
 from database import Base, db_session
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, DataError
 from sqlalchemy.orm import relationship
 import uuid
 from collections import Iterable
@@ -24,8 +24,9 @@ def create(model):						### 'create' is the name of the decorator
 			db_session.add(instance)			### ..added to the seesion
 			db_session.commit()					### ..inserted to the database
 			return instance 					### ..and returned to the caller
-		except IntegrityError, e:
+		except Exception, e:
 			db_session.rollback()
+			print e
 		
 	model.create = autocommit 			###	The model class (e.g. Node, Sensor, etc, is given a create method which calls the inner function) 		
 	return model						### The decorated model class is returned and replaces the origin model class
@@ -131,15 +132,23 @@ class Reading(Base):
 
 
 	def __init__(self, sensor, value = None, timestamp = None):
-		assert isinstance(sensor, Sensor), 'sensor must be an instance of type Sensor'
+		# assert isinstance(sensor, Sensor), 'sensor must be an instance of type Sensor'
 		self.sensor = sensor
-		self.value = value
-		if timestamp:
+		
+		try:
+			self.value = float(value)
+		except DataError, e:
+			value = None
+			raise e
+
+		if timestamp: 
 			try:
 				self.timestamp = datetime.strptime(timestamp, config.DATETIME_FORMAT)
 			except ValueError, e:
-				timestamp = None
 				raise e
+		else:
+			timestamp = None
+			
 
 	def json_detailed(self):
 		return {'type': '<Reading>', 'value': self.value, 'timestamp': self.timestamp, 'sensor': self.sensor}
