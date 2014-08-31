@@ -38,22 +38,14 @@ class Node(Base):
 	alias = Column( String(100) )
 	sensors = relationship('Sensor', backref = 'node')
 
-	def __init__(self, **kwargs):
-		if kwargs.has_key('uuid'): 
-			self.uuid = kwargs['uuid']
-		else:
-			self.uuid = uuid.uuid4().hex
+	def __init__(self, alias = None, sensors = []):
+		assert isinstance(sensors, Iterable), 'sensors must be iterable'
+		for sensor in sensors:
+			assert isinstance(sensor, Sensor), 'Each item in sensors must be an instance of type Sensor'
+			self.sensors.append(sensor)
 
-		if kwargs.has_key('alias'): 
-			self.alias = kwargs['alias']
-
-		if kwargs.has_key('sensors'):
-			sensors = kwargs['sensors']
-			if isinstance(sensors, Iterable):
-				for sensor in sensors:
-					self.sensors.append(sensor)
-			else:
-				self.sensors.append(sensors)
+		self.uuid = uuid.uuid4().hex
+		self.alias = alias
 
 	def json_detailed(self):
 		return {'type': '<Node>', 'uuid': self.uuid, 'alias':self.alias, 'sensors': map(lambda s: s.json_summary(), self.sensors)}
@@ -72,22 +64,11 @@ class SensorType(Base):
 	id = Column( Integer, primary_key = True)
 	name = Column( String() )
 	unit = Column( String() )
-	alias = Column( String() )
 	sensors = relationship('Sensor', backref = 'sensortype')
 
-	def __init__(self, **kwargs):
-		if kwargs.has_key('name'):
-			self.name = kwargs['name']
-		else:
-			raise ExpectedFieldException('name')
-		
-		if kwargs.has_key('unit'):
-			self.unit = kwargs['unit']
-		else:
-			raise ExpectedFieldException('unit')
-
-		if kwargs.has_key('alias'):
-			self.alias = kwargs['alias']
+	def __init__(self, name, unit):
+		self.name = name
+		self.unit = unit
 
 	def json_detailed(self):
 		return {'type': '<SensorType>', 'name': self.name, 'unit': self.unit, 'sensors':map(lambda s: s.json_summary(), self.sensors), 'id': self.id}
@@ -111,55 +92,29 @@ class Sensor(Base):
 	node_id = Column( Integer, ForeignKey('nodes.id') )
 	sensortype_id = Column( Integer, ForeignKey('sensortypes.id') )
 	
-
-	# unit_id = Column( Integer, ForeignKey('sensortypes.id') )
-
-	def __init__(self, **kwargs):
-		if kwargs.has_key('uuid'): 
-			self.uuid = kwargs['uuid']
-		else:
-			self.uuid = uuid.uuid4().hex
+	def __init__(self, sensortype, node, alias = None, readings = []):
+		assert isinstance(sensortype, SensorType), 'sensortype must be an instance of type SensorType'
+		assert isinstance(node, Node), 'node must be an instance of type Node'
+		assert isinstance(readings, Iterable), 'readings must iterable'
 		
-		if kwargs.has_key('alias'):
-			self.alias = kwargs['alias']
-
-		if kwargs.has_key('sensortype'): 
-			self.unit = kwargs['sensortype']
-		else:
-			raise ExpectedFieldException('sensortype')
-
-		if kwargs.has_key('node'):
-			self.node = kwargs['node']
-		else:
-			raise ExpectedFieldException('node')
-
-		if kwargs.has_key('readings'):
-			readings = kwargs['readings']
-			if isinstance(readings, Iterable):
-				for reading in readings:
-					self.readings.append(reading)
-			else:
-				self.readings.append(reading)
-
-	# def describe(self):
-
-	# 	return '<Sensor> uuid: %s, alias: %s, node: %s, sensor_type: %s, readings: %s'%(self.uuid, self.alias, self.node, self.sensortype, self.readings)
+		self.sensortype = sensortype
+		self.node = node
+		self.uuid = uuid.uuid4().hex
+		self.alias = alias
+		
+		for reading in readings:
+			assert isinstance(reading, Reading), 'Each item in readings must be an instance of type Reading'
+			self.readings.append(reading)
 
 	def json_detailed(self):
 		return {'type': '<Sensor>', 'uuid': self.uuid, 'sensor_type':self.sensortype, 'readings': map(lambda r: r.json_detailed(), self.readings)}
 
 	def json_summary(self):
-		return {'type': '<Sensor>', 'uuid': self.uuid, 'sensor_type':self.sensortype, 'readings': map(lambda r: r.json_summary(), self.readings)}
-		# return {'type': '<Sensor>', 'uuid': self.uuid, 'node':self.node, 'sensor_type':self.sensortype, 'readings': map(lambda r: r.details(), self.readings)}
+		return {'type': '<Sensor>', 'uuid': self.uuid, 'sensor_type':self.sensortype, 'number of readings': len(self.readings)}
 
  
 	def __repr__(self):
-		if self.alias == None:
-			return json.dumps({'uuid': self.uuid})# '<Sensor> %s'%self.uuid
-		else:
-			return json.dumps({'alias': self.alias})
-			# '<Sensor> %s'%self.alias
-		
+		return json.dumps(self.json_summary())
 
 @create
 class Reading(Base):
@@ -171,18 +126,11 @@ class Reading(Base):
 
 	sensor_id = Column( Integer, ForeignKey('sensors.id') )
 
-	def __init__(self, **kwargs):
-
-		if kwargs.has_key('timestamp'): 
-			self.timestamp = kwargs['timestamp']		
-
-		if kwargs.has_key('value'): 
-			self.value = kwargs['value']
-
-		if kwargs.has_key('sensor'):
-			self.sensor = kwargs['sensor']
-		else:
-			raise ExpectedFieldException('sensor')
+	def __init__(self, sensor, value = None, timestamp = None):
+		assert isinstance(sensor, Sensor), 'sensor must be an instance of type Sensor'
+		self.sensor = sensor
+		self.value = value
+		self.timestamp = timestamp
 
 	def json_detailed(self):
 		return {'type': '<Reading>', 'value': self.value, 'timestamp': self.timestamp.strftime(config.DATETIME_FORMAT)}
