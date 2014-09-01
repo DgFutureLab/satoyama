@@ -6,7 +6,7 @@ setup(
   description = 'Datamodels and utilities',
   author = 'Halfdan Rump',
   author_email = 'dalekk@gmail.com',
-  url = 'https://github.com/peterldowns/mypackage', # use the URL to the github repo
+  url = 'https://github.com/DgFutureLab/satoyama', # use the URL to the github repo
   download_url = 'https://github.com/DgFutureLab/satoyama/tarball/0.1', # I'll explain this in a second
   keywords = ['sensor network', 'models'], # arbitrary keywords
   classifiers = [],
