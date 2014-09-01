@@ -3,7 +3,7 @@ setup(
   name = 'satoyama',
   packages = ['satoyama'], # this must be the same as the name above
   version = '0.1',
-  description = 'Datamodels and utilities',
+  description = 'Datamodels and utilities for sensor networks',
   author = 'Halfdan Rump',
   author_email = 'dalekk@gmail.com',
   url = 'https://github.com/DgFutureLab/satoyama', # use the URL to the github repo
