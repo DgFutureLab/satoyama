@@ -8,12 +8,6 @@ import json
 import config
 from datetime import datetime
 
-class ExpectedFieldException(Exception):
-	def __init__(self, field):
-		message = 'Expected keyword for field %s'%field
-		super(ExpectedFieldException, self).__init__(message)
-
-
 
 
 def create(model):						### 'create' is the name of the decorator
@@ -142,10 +136,7 @@ class Reading(Base):
 			raise e
 
 		if timestamp: 
-			try:
-				self.timestamp = datetime.strptime(timestamp, config.DATETIME_FORMAT)
-			except ValueError, e:
-				raise e
+			self.timestamp = get_longest_timestamp(timestamp)
 		else:
 			timestamp = None
 			
@@ -160,6 +151,21 @@ class Reading(Base):
 		return json.dumps(self.json_summary())
 
 		
+def get_longest_timestamp(timestring):
+	for format in config.DATETIME_FORMATS:
+		timestamp = None
+		try:
+			timestamp = datetime.strptime(timestring, format)
+			break
+		except ValueError:
+			pass
+
+	if not timestamp: 
+		raise Exception('Provided timestamp matched none of the allowed datetime formats')
+	
+	return timestamp
+
+
 def get_testobjects():
 
 	n = Node.create(alias = 'testnode')
