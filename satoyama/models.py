@@ -2,7 +2,6 @@ from database import Base, db_session
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float
 from sqlalchemy.exc import IntegrityError, DataError
 from sqlalchemy.orm import relationship
-import uuid
 from collections import Iterable
 import json
 import config
@@ -32,27 +31,22 @@ class Node(Base):
 	__tablename__ = 'nodes'
 	
 	id = Column( Integer, primary_key = True )
-	uuid = Column( String(32), unique = True)
 	alias = Column( String(100) )
 	sensors = relationship('Sensor', backref = 'node')
 
-	def __init__(self, uuid = None, alias = None, sensors = []):
+	def __init__(self, alias = None, sensors = []):
 		assert isinstance(sensors, Iterable), 'sensors must be iterable'
 		for sensor in sensors:
 			assert isinstance(sensor, Sensor), 'Each item in sensors must be an instance of type Sensor'
 			self.sensors.append(sensor)
 
-		if uuid:
-			self.uuid = uuid
-			self.uuid = uuid.uuid4().hex
-
 		self.alias = alias
 
 	def json_detailed(self):
-		return {'type': '<Node>', 'uuid': self.uuid, 'alias':self.alias, 'sensors': map(lambda s: s.json_summary(), self.sensors)}
+		return {'type': '<Node>', 'id': self.id, 'alias':self.alias, 'sensors': map(lambda s: s.json_summary(), self.sensors)}
 
 	def json_summary(self):
-		return {'type': '<Node>', 'uuid': self.uuid, 'alias':self.alias, 'number of sensors': len(self.sensors)}
+		return {'type': '<Node>', 'id': self.id, 'alias':self.alias, 'number of sensors': len(self.sensors)}
 	
 	def __repr__(self):
 		return json.dumps(self.json_summary())
@@ -86,14 +80,13 @@ class Sensor(Base):
 	__tablename__ = 'sensors'
 	
 	id = Column( Integer, primary_key = True )
-	uuid = Column( String(32), unique = True )
 	alias = Column( String() )
 
 	readings = relationship('Reading', backref = 'sensor')
 	node_id = Column( Integer, ForeignKey('nodes.id') )
 	sensortype_id = Column( Integer, ForeignKey('sensortypes.id') )
 	
-	def __init__(self, sensortype, node, uuid = None, alias = None, readings = []):
+	def __init__(self, sensortype, node, alias = None, readings = []):
 		assert isinstance(sensortype, SensorType), 'sensortype must be an instance of type SensorType'
 		assert isinstance(node, Node), 'node must be an instance of type Node'
 		assert isinstance(readings, Iterable), 'readings must iterable'
@@ -101,21 +94,16 @@ class Sensor(Base):
 		self.sensortype = sensortype
 		self.node = node
 		self.alias = alias
-
-		if uuid:
-			self.uuid = uuid
-		else: 
-			self.uuid = uuid.uuid4().hex
 		
 		for reading in readings:
 			assert isinstance(reading, Reading), 'Each item in readings must be an instance of type Reading'
 			self.readings.append(reading)
 
 	def json_detailed(self):
-		return {'type': '<Sensor>', 'uuid': self.uuid, 'sensor_type':self.sensortype.json_summary(), 'readings': map(lambda r: r.json_detailed(), self.readings)}
+		return {'type': '<Sensor>', 'id': self.id, 'alias' : self.alias, 'sensor_type':self.sensortype.json_summary(), 'readings': map(lambda r: r.json_detailed(), self.readings)}
 
 	def json_summary(self):
-		return {'type': '<Sensor>', 'uuid': self.uuid, 'number of readings': len(self.readings)}
+		return {'type': '<Sensor>', 'id': self.id, 'alias' : self.alias, 'number of readings': len(self.readings)}
 
  
 	def __repr__(self):
