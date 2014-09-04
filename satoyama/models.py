@@ -8,19 +8,25 @@ import config
 from datetime import datetime
 
 
-
 def create(model):						### 'create' is the name of the decorator
 	@staticmethod
 	def autocommit(*args, **kwargs): 		### Gets arguments for the object to create
-		instance = model(*args, **kwargs) 	### Instance is created
 		try:
-			db_session.add(instance)			### ..added to the seesion
-			db_session.commit()					### ..inserted to the database
-			return instance 					### ..and returned to the caller
+			instance = model(*args, **kwargs) 	### Instance is created		
 		except Exception, e:
 			db_session.rollback()
-			print e
+			raise e
 		
+		if instance:
+			try:
+				db_session.add(instance)			### ..added to the session
+				db_session.commit()					### ..inserted to the database
+				return instance 					### ..and returned to the caller
+			except Exception, e:
+				db_session.rollback()
+				print e
+
+	
 	model.create = autocommit 			###	The model class (e.g. Node, Sensor, etc, is given a create method which calls the inner function) 		
 	return model						### The decorated model class is returned and replaces the origin model class
 
@@ -131,9 +137,12 @@ class Reading(Base):
 			raise e
 
 		if timestamp: 
-			self.timestamp = get_longest_timestamp(timestamp)
+			timestamp = get_longest_timestamp(timestamp)
+
+		if timestamp:
+			self.timestamp = timestamp
 		else:
-			timestamp = None
+			raise ValueError('Provided timestamp matched none of the allowed datetime formats')
 			
 
 	def json_detailed(self):
@@ -154,9 +163,8 @@ def get_longest_timestamp(timestring):
 			break
 		except ValueError:
 			pass
-
+	return timestamp
 	if not timestamp: 
-		raise Exception('Provided timestamp matched none of the allowed datetime formats')
 	
 	return timestamp
 
