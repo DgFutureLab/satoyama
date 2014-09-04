@@ -36,13 +36,16 @@ class Node(Base):
 	alias = Column( String(100) )
 	sensors = relationship('Sensor', backref = 'node')
 
-	def __init__(self, alias = None, sensors = []):
+	def __init__(self, uuid = None, alias = None, sensors = []):
 		assert isinstance(sensors, Iterable), 'sensors must be iterable'
 		for sensor in sensors:
 			assert isinstance(sensor, Sensor), 'Each item in sensors must be an instance of type Sensor'
 			self.sensors.append(sensor)
 
-		self.uuid = uuid.uuid4().hex
+		if uuid:
+			self.uuid = uuid
+			self.uuid = uuid.uuid4().hex
+
 		self.alias = alias
 
 	def json_detailed(self):
@@ -90,15 +93,19 @@ class Sensor(Base):
 	node_id = Column( Integer, ForeignKey('nodes.id') )
 	sensortype_id = Column( Integer, ForeignKey('sensortypes.id') )
 	
-	def __init__(self, sensortype, node, alias = None, readings = []):
+	def __init__(self, sensortype, node, uuid = None, alias = None, readings = []):
 		assert isinstance(sensortype, SensorType), 'sensortype must be an instance of type SensorType'
 		assert isinstance(node, Node), 'node must be an instance of type Node'
 		assert isinstance(readings, Iterable), 'readings must iterable'
 		
 		self.sensortype = sensortype
 		self.node = node
-		self.uuid = uuid.uuid4().hex
 		self.alias = alias
+
+		if uuid:
+			self.uuid = uuid
+		else: 
+			self.uuid = uuid.uuid4().hex
 		
 		for reading in readings:
 			assert isinstance(reading, Reading), 'Each item in readings must be an instance of type Reading'
