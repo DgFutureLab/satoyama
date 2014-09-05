@@ -164,9 +164,6 @@ def get_longest_timestamp(timestring):
 		except ValueError:
 			pass
 	return timestamp
-	if not timestamp: 
-	
-	return timestamp
 
 
 def get_testobjects():
