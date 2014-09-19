@@ -31,6 +31,17 @@ def create(model):						### 'create' is the name of the decorator
 	return model						### The decorated model class is returned and replaces the origin model class
 
 
+
+# class Place(Base):
+# 	pass
+
+class BaseModel(Base):
+
+	def json(self, verbose = False):
+
+		return json.dumps(self.__dict__)
+
+
 @create
 class Node(Base):
 	
@@ -39,20 +50,24 @@ class Node(Base):
 	id = Column( Integer, primary_key = True )
 	alias = Column( String(100) )
 	sensors = relationship('Sensor', backref = 'node')
+	longitude = Column( Float()) 
+	latitude = Column( Float())
 
-	def __init__(self, alias = None, sensors = []):
+	def __init__(self, alias = None, sensors = [], longitude = None, latitude = None):
 		assert isinstance(sensors, Iterable), 'sensors must be iterable'
 		for sensor in sensors:
 			assert isinstance(sensor, Sensor), 'Each item in sensors must be an instance of type Sensor'
 			self.sensors.append(sensor)
 
+		self.longitude = longitude
+		self.latitude = latitude
 		self.alias = alias
 
 	def json_detailed(self):
-		return {'type': '<Node>', 'id': self.id, 'alias':self.alias, 'sensors': map(lambda s: s.json_summary(), self.sensors)}
+		return {'type': '<Node>', 'id': self.id, 'alias':self.alias, 'sensors': map(lambda s: s.json_summary(), self.sensors), 'longitude': self.longitude, 'latitude': self.latitude}
 
 	def json_summary(self):
-		return {'type': '<Node>', 'id': self.id, 'alias':self.alias, 'number of sensors': len(self.sensors)}
+		return {'type': '<Node>', 'id': self.id, 'alias':self.alias, 'number of sensors': len(self.sensors), 'longitude': self.longitude, 'latitude': self.latitude}
 	
 	def __repr__(self):
 		return json.dumps(self.json_summary())
@@ -109,8 +124,7 @@ class Sensor(Base):
 		return {'type': '<Sensor>', 'id': self.id, 'alias' : self.alias, 'sensor_type':self.sensortype.json_summary(), 'readings': map(lambda r: r.json_detailed(), self.readings)}
 
 	def json_summary(self):
-		return {'type': '<Sensor>', 'id': self.id, 'alias' : self.alias, 'number of readings': len(self.readings)}
-
+		return {'sensortype': self.sensortype.name, 'id': self.id, 'alias' : self.alias, 'number of readings': len(self.readings)}
  
 	def __repr__(self):
 		return json.dumps(self.json_summary())
