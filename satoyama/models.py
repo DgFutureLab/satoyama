@@ -1,7 +1,7 @@
 from database import Base, db_session
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float
 from sqlalchemy.exc import IntegrityError, DataError
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, object_mapper
 from collections import Iterable
 import json
 import config
@@ -35,15 +35,17 @@ def create(model):						### 'create' is the name of the decorator
 # class Place(Base):
 # 	pass
 
-class BaseModel(Base):
+class SatoyamaBase():
 
 	def json(self, verbose = False):
+		jsondict = {}
+		for prop in object_mapper(self).iterate_properties: 
+			jsondict.update({prop.key: getattr(self, prop.key)})
+		return jsondict
 
-		return json.dumps(self.__dict__)
-
-
+	
 @create
-class Node(Base):
+class Node(Base, SatoyamaBase):
 	
 	__tablename__ = 'nodes'
 	
@@ -63,14 +65,8 @@ class Node(Base):
 		self.latitude = latitude
 		self.alias = alias
 
-	def json_detailed(self):
-		return {'type': '<Node>', 'id': self.id, 'alias':self.alias, 'sensors': map(lambda s: s.json_summary(), self.sensors), 'longitude': self.longitude, 'latitude': self.latitude}
-
-	def json_summary(self):
-		return {'type': '<Node>', 'id': self.id, 'alias':self.alias, 'number of sensors': len(self.sensors), 'longitude': self.longitude, 'latitude': self.latitude}
-	
 	def __repr__(self):
-		return json.dumps(self.json_summary())
+		return str({'id' : self.id})
 
 
 @create
@@ -86,18 +82,12 @@ class SensorType(Base):
 		self.name = name
 		self.unit = unit
 
-	def json_detailed(self):
-		return {'type': '<SensorType>', 'name': self.name, 'unit': self.unit, 'sensors':len(self.sensors), 'id': self.id}
-
-	def json_summary(self):
-		return {'type': '<SensorType>', 'name': self.name, 'id': self.id}
-
 	def __repr__(self):
-		return json.dumps(self.json_summary())
+		return str({'id' : self.id})
 
 
 @create
-class Sensor(Base):
+class Sensor(Base, SatoyamaBase):
 	__tablename__ = 'sensors'
 	
 	id = Column( Integer, primary_key = True )
@@ -120,14 +110,9 @@ class Sensor(Base):
 			assert isinstance(reading, Reading), 'Each item in readings must be an instance of type Reading'
 			self.readings.append(reading)
 
-	def json_detailed(self):
-		return {'type': '<Sensor>', 'id': self.id, 'alias' : self.alias, 'sensor_type':self.sensortype.json_summary(), 'readings': map(lambda r: r.json_detailed(), self.readings)}
-
-	def json_summary(self):
-		return {'sensortype': self.sensortype.name, 'id': self.id, 'alias' : self.alias, 'number of readings': len(self.readings)}
- 
 	def __repr__(self):
-		return json.dumps(self.json_summary())
+		return str({'id' : self.id})
+
 
 @create
 class Reading(Base):
@@ -141,7 +126,6 @@ class Reading(Base):
 
 
 	def __init__(self, sensor, value = None, timestamp = None):
-		# assert isinstance(sensor, Sensor), 'sensor must be an instance of type Sensor'
 		self.sensor = sensor
 		
 		try:
@@ -157,17 +141,11 @@ class Reading(Base):
 			self.timestamp = timestamp
 		else:
 			raise ValueError('Provided timestamp matched none of the allowed datetime formats')
-			
-
-	def json_detailed(self):
-		return {'type': '<Reading>', 'value': self.value, 'timestamp': self.timestamp, 'sensor': self.sensor}
-
-	def json_summary(self):
-		return {'type': '<Reading>', 'value': self.value, 'id': self.id}
-
+	
 	def __repr__(self):
-		return json.dumps(self.json_summary())
+		return str({'id' : self.id})
 
+	
 		
 def get_longest_timestamp(timestring):
 	for format in config.DATETIME_FORMATS:
