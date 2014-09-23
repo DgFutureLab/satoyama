@@ -1,7 +1,7 @@
 from database import Base, db_session
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float
 from sqlalchemy.exc import IntegrityError, DataError
-from sqlalchemy.orm import relationship, object_mapper
+from sqlalchemy.orm import relationship, object_mapper, class_mapper
 from collections import Iterable
 import json
 import config
@@ -35,6 +35,7 @@ def create(model):						### 'create' is the name of the decorator
 # class Place(Base):
 # 	pass
 
+
 class SatoyamaBase():
 
 	def json(self, verbose = False):
@@ -43,6 +44,12 @@ class SatoyamaBase():
 			jsondict.update({prop.key: getattr(self, prop.key)})
 		return jsondict
 
+	@classmethod
+	def settables(cls):
+		"""
+		Returns a list of which fields in the inhereted model can be set when instantiating the class.
+		"""
+		return filter(lambda x: x != 'id', [p.key for p in class_mapper(cls).iterate_properties])
 	
 @create
 class Node(Base, SatoyamaBase):
