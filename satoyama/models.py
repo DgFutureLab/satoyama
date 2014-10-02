@@ -31,12 +31,14 @@ def create(model):						### 'create' is the name of the decorator
 	return model						### The decorated model class is returned and replaces the origin model class
 
 
-
 # class Place(Base):
 # 	pass
 
 
 class SatoyamaBase():
+
+	def __init__(self):
+		self.messages = list()
 
 	def json(self, verbose = False):
 		jsondict = {}
@@ -51,8 +53,9 @@ class SatoyamaBase():
 		"""
 		return filter(lambda x: x != 'id', [p.key for p in class_mapper(cls).iterate_properties])
 	
+
 @create
-class Node(Base, SatoyamaBase):
+class Node(SatoyamaBase, Base):
 	
 	__tablename__ = 'nodes'
 	
@@ -63,6 +66,7 @@ class Node(Base, SatoyamaBase):
 	latitude = Column( Float())
 
 	def __init__(self, alias = None, sensors = [], longitude = None, latitude = None):
+		super(Node, self).__init__()
 		assert isinstance(sensors, Iterable), 'sensors must be iterable'
 		for sensor in sensors:
 			assert isinstance(sensor, Sensor), 'Each item in sensors must be an instance of type Sensor'
@@ -75,9 +79,8 @@ class Node(Base, SatoyamaBase):
 	def __repr__(self):
 		return str({'id' : self.id})
 
-
 @create
-class SensorType(Base):
+class SensorType(SatoyamaBase, Base):
 	__tablename__ = 'sensortypes'
 
 	id = Column( Integer, primary_key = True)
@@ -86,15 +89,15 @@ class SensorType(Base):
 	sensors = relationship('Sensor', backref = 'sensortype')
 
 	def __init__(self, name, unit):
+		super(SensorType, self).__init__()
 		self.name = name
 		self.unit = unit
 
 	def __repr__(self):
 		return str({'id' : self.id})
 
-
 @create
-class Sensor(Base, SatoyamaBase):
+class Sensor(SatoyamaBase, Base):
 	__tablename__ = 'sensors'
 	
 	id = Column( Integer, primary_key = True )
@@ -105,6 +108,7 @@ class Sensor(Base, SatoyamaBase):
 	sensortype_id = Column( Integer, ForeignKey('sensortypes.id') )
 	
 	def __init__(self, sensortype, node, alias = None, readings = []):
+		super(Sensor, self).__init__()
 		assert isinstance(sensortype, SensorType), 'sensortype must be an instance of type SensorType'
 		assert isinstance(node, Node), 'node must be an instance of type Node'
 		assert isinstance(readings, Iterable), 'readings must iterable'
@@ -120,59 +124,49 @@ class Sensor(Base, SatoyamaBase):
 	def __repr__(self):
 		return str({'id' : self.id})
 
-
 @create
-class Reading(Base):
+class Reading(SatoyamaBase, Base):
 	__tablename__ = 'readings'
 
 	id = Column( Integer, primary_key = True )
 	timestamp = Column( DateTime() )
 	value = Column( Float() )
-
 	sensor_id = Column( Integer, ForeignKey('sensors.id') )
 
-
 	def __init__(self, sensor, value = None, timestamp = None):
+		super(Reading, self).__init__()
 		self.sensor = sensor
 		
-		try:
-			self.value = float(value)
-		except DataError, e:
-			value = None
-			raise e
+		if value:
+			try:
+				self.value = float(value)
+			except DataError, e:
+				value = None
+				raise e
 
-		if timestamp: 
-			timestamp = get_longest_timestamp(timestamp)
-
-		if timestamp:
-			self.timestamp = timestamp
-		else:
-			raise ValueError('Provided timestamp matched none of the allowed datetime formats')
+		#self.timestamp = 
+		self.timestamp = self.convert_timestamp(timestamp)
 	
 	def __repr__(self):
 		return str({'id' : self.id})
 
-	
+	def convert_timestamp(self, timestamp):
+		"""
+		:param timestamp: Must be an instance of datetime, or a string with one of the allowed satoyama datetime formats.
+		"""
+
+		if not isinstance(timestamp, datetime):
+			for format in config.DATETIME_FORMATS:
+				try:
+					timestamp = datetime.strptime(timestamp, format)
+					break
+				except Exception:
+					pass
+			timestamp = None
 		
-def get_longest_timestamp(timestring):
-	for format in config.DATETIME_FORMATS:
-		timestamp = None
-		try:
-			timestamp = datetime.strptime(timestring, format)
-			break
-		except ValueError:
-			pass
-	return timestamp
-
-
-def get_testobjects():
-
-	n = Node.create(alias = 'testnode')
-	st = SensorType.create(name = 'temperature', unit = 'C')
- 	s = Sensor.create(sensortype = st, node = n)
- 	r = Reading.create(sensor = s)
- 	return n, st, s, r
-
-
-
+		if timestamp:
+			return timestamp
+		else:
+			self.messages.append('Provided timestamp matched none of the allowed datetime formats. Using local server time.')
+			return datetime.utcnow()
 
