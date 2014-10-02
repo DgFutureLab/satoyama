@@ -3,10 +3,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float
 from sqlalchemy.exc import IntegrityError, DataError
 from sqlalchemy.orm import relationship, object_mapper, class_mapper
 from collections import Iterable
-import json
-import config
-from datetime import datetime
-
+from helpers import DatetimeHelper
 
 def create(model):						### 'create' is the name of the decorator
 	@staticmethod
@@ -125,7 +122,7 @@ class Sensor(SatoyamaBase, Base):
 		return str({'id' : self.id})
 
 @create
-class Reading(SatoyamaBase, Base):
+class Reading(SatoyamaBase, DatetimeHelper, Base):
 	__tablename__ = 'readings'
 
 	id = Column( Integer, primary_key = True )
@@ -144,29 +141,10 @@ class Reading(SatoyamaBase, Base):
 				value = None
 				raise e
 
-		#self.timestamp = 
 		self.timestamp = self.convert_timestamp(timestamp)
 	
 	def __repr__(self):
 		return str({'id' : self.id})
 
-	def convert_timestamp(self, timestamp):
-		"""
-		:param timestamp: Must be an instance of datetime, or a string with one of the allowed satoyama datetime formats.
-		"""
 
-		if not isinstance(timestamp, datetime):
-			for format in config.DATETIME_FORMATS:
-				try:
-					timestamp = datetime.strptime(timestamp, format)
-					break
-				except Exception:
-					pass
-			timestamp = None
-		
-		if timestamp:
-			return timestamp
-		else:
-			self.messages.append('Provided timestamp matched none of the allowed datetime formats. Using local server time.')
-			return datetime.utcnow()
 
