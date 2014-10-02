@@ -1,6 +1,12 @@
 from core import HelperBase
 from datetime import datetime 
-import config
+
+DATETIME_FORMATS = [
+					'%Y-%m-%d-%H:%M:%S:%f',
+					'%Y-%m-%d-%H:%M:%S',
+					'%Y-%m-%d-%H:%M',
+					'%Y-%m-%d'
+					]
 
 class DatetimeHelper(HelperBase):
 
@@ -10,7 +16,7 @@ class DatetimeHelper(HelperBase):
 		"""
 		converted = False
 		if not isinstance(timestamp, datetime):
-			for format in config.DATETIME_FORMATS:
+			for format in DATETIME_FORMATS:
 				print format, timestamp
 				try:
 					timestamp = datetime.strptime(timestamp, format)
@@ -18,7 +24,7 @@ class DatetimeHelper(HelperBase):
 					break
 				except Exception:
 					pass
-				
+
 		if not converted:
 			timestamp = None
 

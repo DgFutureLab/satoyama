@@ -13,7 +13,7 @@ def create(model):						### 'create' is the name of the decorator
 		except Exception, e:
 			db_session.rollback()
 			raise e
-		
+
 		if instance:
 			try:
 				db_session.add(instance)			### ..added to the session
@@ -23,14 +23,8 @@ def create(model):						### 'create' is the name of the decorator
 				db_session.rollback()
 				print e
 
-	
 	model.create = autocommit 			###	The model class (e.g. Node, Sensor, etc, is given a create method which calls the inner function) 		
 	return model						### The decorated model class is returned and replaces the origin model class
-
-
-# class Place(Base):
-# 	pass
-
 
 class SatoyamaBase():
 
@@ -49,7 +43,6 @@ class SatoyamaBase():
 		Returns a list of which fields in the inhereted model can be set when instantiating the class.
 		"""
 		return filter(lambda x: x != 'id', [p.key for p in class_mapper(cls).iterate_properties])
-	
 
 @create
 class Node(SatoyamaBase, Base):
@@ -99,7 +92,6 @@ class Sensor(SatoyamaBase, Base):
 	
 	id = Column( Integer, primary_key = True )
 	alias = Column( String() )
-
 	readings = relationship('Reading', backref = 'sensor')
 	node_id = Column( Integer, ForeignKey('nodes.id') )
 	sensortype_id = Column( Integer, ForeignKey('sensortypes.id') )
@@ -145,6 +137,4 @@ class Reading(SatoyamaBase, DatetimeHelper, Base):
 	
 	def __repr__(self):
 		return str({'id' : self.id})
-
-
 

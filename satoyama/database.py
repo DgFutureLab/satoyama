@@ -8,9 +8,6 @@ db_session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind
 Base = declarative_base()
 Base.query = db_session.query_property()
 
-
-
-
 def nuke_db():
 	import models
 	db_session.close()
