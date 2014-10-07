@@ -3,5 +3,7 @@ setup.cfg
 setup.py
 satoyama/__init__.py
 satoyama/config.py
+satoyama/core.py
 satoyama/database.py
+satoyama/helpers.py
 satoyama/models.py
