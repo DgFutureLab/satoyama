@@ -1,12 +1,7 @@
 from core import HelperBase
 from datetime import datetime 
 
-DATETIME_FORMATS = [
-					'%Y-%m-%d-%H:%M:%S:%f',
-					'%Y-%m-%d-%H:%M:%S',
-					'%Y-%m-%d-%H:%M',
-					'%Y-%m-%d'
-					]
+from definitions import DATETIME_FORMATS
 
 class DatetimeHelper(HelperBase):
 
